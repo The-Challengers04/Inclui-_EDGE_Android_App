@@ -61,7 +61,7 @@ public class InfoActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_info);
 
-        toneGenerator = new ToneGenerator(AudioManager.STREAM_ALARM, 40);
+        toneGenerator = new ToneGenerator(AudioManager.STREAM_ALARM, 80);
         handler = new Handler();
 
         gson = new Gson();
@@ -150,29 +150,31 @@ public class InfoActivity extends AppCompatActivity {
                         if (!line.isEmpty()) {
                             try {
                                 DadosClass dadosClass = gson.fromJson(line, DadosClass.class);
-                                int potenciomerterValue = dadosClass.getValue();
+
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
-                                        TrackedObstacleText.setText("VERDADEIRO");
-                                        DistanceText.setText(potenciomerterValue + " cm");
+                                        TrackedObstacleText.setText(Boolean.toString(dadosClass.getObjectDetected()));
+                                        DistanceText.setText(Integer.toString(dadosClass.getDistance()) + " cm");
                                     }
                                 });
-                                int interval = potenciomerterValue * 2 + 30;
-                                if(!timerWasAssigned) {
-                                    timerWasAssigned = true;
-                                    new Thread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            try {
-                                                Thread.sleep(interval);
-                                            } catch (InterruptedException e) {
-                                                e.printStackTrace();
+                                if(dadosClass.getObjectDetected()) {
+                                    int interval = dadosClass.getDistance() + 30;
+                                    if (!timerWasAssigned) {
+                                        timerWasAssigned = true;
+                                        new Thread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                try {
+                                                    Thread.sleep(interval);
+                                                } catch (InterruptedException e) {
+                                                    e.printStackTrace();
+                                                }
+                                                simulateObjectDetection();
+                                                timerWasAssigned = false;
                                             }
-                                            simulateObjectDetection();
-                                            timerWasAssigned = false;
-                                        }
-                                    }).start();
+                                        }).start();
+                                    }
                                 }
 
                             }catch (JsonSyntaxException err){
@@ -215,36 +217,36 @@ public class InfoActivity extends AppCompatActivity {
 
 
     public class DadosClass{
-        @SerializedName("sensor")
-        private String sensor;
-        @SerializedName("value")
-        private int value;
+        @SerializedName("obstacleDetected")
+        private boolean obstacleDetected;
+        @SerializedName("distance")
+        private int distance;
 
-        public DadosClass(String sensor, int value){
-            this.setValue(value);
-            this.setSensor(sensor);
+        @SerializedName("height")
+        private int height;
+
+        public DadosClass(boolean obstacleDetected, int distance, int height){
+            this.obstacleDetected = obstacleDetected;
+            this.distance = distance;
+            this.height = height;
         }
 
         public DadosClass(){}
 
-        @NonNull
-        @Override
-        public String toString() {
-            return "Sensor : " + this.getSensor() + "; Valor : " + this.getValue() ;
+        public void setObstacleDetected(boolean obstacleDetected){
+            this.obstacleDetected = obstacleDetected;
         }
-
-        public void setSensor(String sensor){
-            this.sensor = sensor;
+        public boolean getObjectDetected(){
+            return this.obstacleDetected;
         }
-        public String getSensor(){
-            return this.sensor;
+        public void setDistance(int distance){
+            this.distance = distance;
         }
-        public void setValue(int value){
-            this.value = value;
+        public int getDistance(){
+            return this.distance;
         }
-        public int getValue(){
-            return this.value;
-        }
+        public void setHeight(int height) {this.height = height;}
+        public int getHeight(){return  this.height;}
     }
 
     private void simulateObjectDetection() {
